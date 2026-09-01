@@ -2,10 +2,10 @@ from pathlib import Path
 
 import cv2
 
-from app.ocr.paddle_ocr import OCRProcessor
-from app.preprocessing.resize import resize_image
-from app.preprocessing.orientation import rotate_image
-from app.preprocessing.enhance import enhance_image
+from .ocr.paddle_ocr import OCRProcessor
+from .preprocessing.resize import resize_image
+from .preprocessing.orientation import rotate_image
+from .preprocessing.enhance import enhance_image
 
 
 class OCRPipeline:

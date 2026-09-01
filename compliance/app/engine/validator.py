@@ -2,25 +2,61 @@ from app.rules.mandatory_declarations import check_mandatory_declarations
 from app.rules.mrp_rules import check_mrp
 from app.rules.quantity_rules import check_quantity
 from app.rules.date_rules import check_dates
+from app.rules.standard_pack_rules import check_standard_pack
+from app.rules.display_panel_rules import check_display_panel
 
 from app.engine.scorer import calculate_score
 from app.engine.status import determine_status
 
 
-def validate_product(product):
+def _normalize_product(product):
     """
-    Runs all available Legal Metrology compliance checks
-    and returns the final inspection result.
+    Converts Member 3's ProductData field names into the
+    field names expected by the compliance rules.
+    """
 
-    Current checks:
-    - Mandatory declarations
-    - MRP
-    - Net quantity
-    - Date declarations
+    normalized = dict(product)
 
-    Additional rules such as dimensions and standard
-    package sizes can be added without changing the
-    overall validation structure.
+    # Member 3 -> Compliance field mapping
+    if not normalized.get("manufacturer_packer_importer"):
+        normalized["manufacturer_packer_importer"] = (
+            normalized.get("manufacturer")
+        )
+
+    if not normalized.get("manufacturing_date"):
+        normalized["manufacturing_date"] = (
+            normalized.get("packing_date")
+        )
+
+    if not normalized.get("consumer_care_details"):
+        normalized["consumer_care_details"] = (
+            normalized.get("consumer_care")
+        )
+
+    # Determine imported status
+    if "is_imported" not in normalized:
+        normalized["is_imported"] = bool(
+            normalized.get("country_of_origin")
+        )
+
+    # Optional fields
+    normalized.setdefault("selling_price", None)
+    normalized.setdefault("mrp_inclusive_of_taxes", None)
+    normalized.setdefault("unit_sale_price", None)
+
+    return normalized
+
+
+def validate_product(product, ocr_result=None):
+    """
+    Runs all available Legal Metrology compliance checks.
+
+    Args:
+        product: Product data extracted by the AI/LLM module.
+        ocr_result: Optional OCR result from Member 2.
+
+    Returns:
+        Complete compliance inspection result.
     """
 
     if not isinstance(product, dict):
@@ -45,6 +81,9 @@ def validate_product(product):
                 }
             ]
         }
+
+    # Normalize Member 3's output
+    product = _normalize_product(product)
 
     all_checks = {}
     all_violations = []
@@ -100,13 +139,56 @@ def validate_product(product):
     )
 
     # --------------------------------------------------
-    # 5. Calculate Compliance Score
+    # 5. Standard Pack Rules
+    # --------------------------------------------------
+
+    standard_pack_result = check_standard_pack(product)
+
+    all_checks["standard_pack"] = (
+        standard_pack_result["checks"]
+    )
+
+    all_violations.extend(
+        standard_pack_result["violations"]
+    )
+
+    # --------------------------------------------------
+    # 6. Display Panel Rules
+    # --------------------------------------------------
+
+    # Use OCR passed directly to the validator.
+    # If it is not provided, display-panel OCR checking
+    # is not applicable for this validation.
+
+    if ocr_result:
+
+        display_result = check_display_panel(
+            ocr_result,
+            product
+        )
+
+        all_checks["display_panel"] = (
+            display_result["checks"]
+        )
+
+        all_violations.extend(
+            display_result["violations"]
+        )
+
+    else:
+
+        all_checks["display_panel"] = {
+            "display_panel_ocr": "NOT_APPLICABLE"
+        }
+
+    # --------------------------------------------------
+    # 7. Calculate Compliance Score
     # --------------------------------------------------
 
     score_data = calculate_score(all_checks)
 
     # --------------------------------------------------
-    # 6. Determine Final Status
+    # 8. Determine Final Status
     # --------------------------------------------------
 
     status = determine_status(
@@ -115,7 +197,7 @@ def validate_product(product):
     )
 
     # --------------------------------------------------
-    # 7. Return Final Compliance Result
+    # 9. Return Final Compliance Result
     # --------------------------------------------------
 
     return {
