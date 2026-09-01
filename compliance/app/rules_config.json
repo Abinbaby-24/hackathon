@@ -1,0 +1,111 @@
+{
+  "mandatory_declarations": {
+    "manufacturer_packer_importer": true,
+    "country_of_origin_if_imported": true,
+    "common_or_generic_name": true,
+    "net_quantity": true,
+    "mrp": true,
+    "consumer_care_details": true,
+    "unit_sale_price": "required_when_applicable",
+    "dimensions": "required_when_applicable",
+    "date_declaration": "required_when_applicable"
+  },
+
+  "mrp": {
+    "required": true,
+    "must_be_positive": true,
+    "inclusive_of_all_taxes": true,
+    "selling_price_must_not_exceed_mrp": true
+  },
+
+  "quantity": {
+    "required": true,
+    "standard_unit_required": true,
+    "allowed_quantity_types": [
+      "weight",
+      "measure",
+      "number"
+    ],
+    "must_be_positive": true
+  },
+
+  "dates": {
+    "manufacturing_date": {
+      "required_when_applicable": true,
+      "accepted_formats": [
+        "YYYY-MM-DD",
+        "DD-MM-YYYY",
+        "DD/MM/YYYY",
+        "YYYY/MM/DD",
+        "MM/YYYY",
+        "MM-YYYY",
+        "MONTH YYYY"
+      ]
+    },
+
+    "packing_date": {
+      "required_when_applicable": true
+    },
+
+    "import_date": {
+      "required_when_applicable": true
+    },
+
+    "best_before_or_use_by": {
+      "required_when_applicable": true
+    },
+
+    "date_order_check": true
+  },
+
+  "unit_sale_price": {
+    "required_when_applicable": true,
+    "excluded_for": [
+      "combination_package",
+      "group_package",
+      "multi_piece_package"
+    ]
+  },
+
+  "dimensions": {
+    "required_when_applicable": true,
+    "must_be_positive": true,
+    "allowed_units": [
+      "mm",
+      "cm",
+      "m",
+      "inch",
+      "in"
+    ]
+  },
+
+  "standard_pack_size": {
+    "enabled": true,
+    "check_when_applicable": true,
+    "commodity_specific": true
+  },
+
+  "display_panel": {
+    "enabled": true,
+    "font_size_check": "REVIEW_IF_DATA_AVAILABLE",
+    "placement_check": "REVIEW_IF_DATA_AVAILABLE",
+    "principal_display_panel_check": "REVIEW_IF_DATA_AVAILABLE"
+  },
+
+  "package_type": {
+    "enabled": true,
+    "allowed_types": [
+      "single_package",
+      "combination_package",
+      "group_package",
+      "multi_piece_package"
+    ]
+  },
+
+  "result_status": {
+    "pass": "COMPLIANT",
+    "fail": "NON_COMPLIANT",
+    "uncertain": "REVIEW",
+    "not_applicable": "NOT_APPLICABLE"
+  }
+}
