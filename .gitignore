@@ -1,9 +1,40 @@
+# =========================
 # Python
+# =========================
 __pycache__/
 *.py[cod]
 *.pyo
 
+# =========================
 # Virtual environments
+# =========================
 .venv/
 venv/
 env/
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# Test data / generated files
+# =========================
+ocr-cv/test_images/
+ocr-cv/test_data/
+ocr-cv/tests/output/
