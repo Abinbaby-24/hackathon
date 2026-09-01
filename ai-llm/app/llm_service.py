@@ -17,14 +17,19 @@ client = genai.Client(
 )
 
 
-def extract_product(ocr_text: str) -> ProductData:
+def extract_product(ocr_result: dict) -> ProductData:
     """
-    Extract structured product information from OCR text.
+    Extract structured product information from OCR result.
     """
 
+    # Get OCR text from Member 2's OCR output
+    ocr_text = ocr_result["text"]
+
+    # Load extraction prompt
     prompt_path = Path(__file__).parent / "prompts" / "extraction_prompt.txt"
     prompt = prompt_path.read_text(encoding="utf-8")
 
+    # Send OCR text to Gemini
     response = client.models.generate_content(
         model="gemini-3.6-flash",
         contents=f"{prompt}\n\nOCR TEXT:\n{ocr_text}",
@@ -34,4 +39,5 @@ def extract_product(ocr_text: str) -> ProductData:
         },
     )
 
+    # Validate Gemini's response against ProductData schema
     return ProductData.model_validate_json(response.text)

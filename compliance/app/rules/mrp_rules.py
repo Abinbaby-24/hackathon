@@ -1,3 +1,42 @@
+import re
+
+
+def _parse_price(value):
+    """
+    Extract a numeric price from common OCR representations.
+
+    Examples:
+        50
+        "50"
+        "₹50"
+        "Rs. 50/-"
+        "5/-"
+        "₹50.00 (Inclusive of all taxes)"
+    """
+
+    if value is None:
+        return None
+
+    text = str(value).strip()
+
+    if not text:
+        return None
+
+    # Remove commas used as thousands separators.
+    text = text.replace(",", "")
+
+    # Find the first valid decimal number.
+    match = re.search(r"\d+(?:\.\d+)?", text)
+
+    if not match:
+        return None
+
+    try:
+        return float(match.group())
+    except ValueError:
+        return None
+
+
 def check_mrp(product):
     """
     Validates the Maximum Retail Price (MRP)
@@ -41,38 +80,16 @@ def check_mrp(product):
     # 2. Check that MRP is a valid positive number
     # --------------------------------------------------
 
-    try:
+    mrp_value = _parse_price(mrp)
 
-        mrp_value = float(mrp)
-
-        if mrp_value <= 0:
-
-            checks["mrp_value"] = "FAIL"
-
-            violations.append({
-                "field": "mrp",
-                "message": (
-                    "MRP must be greater than zero."
-                )
-            })
-
-            return {
-                "checks": checks,
-                "violations": violations
-            }
-
-        else:
-
-            checks["mrp_value"] = "PASS"
-
-    except (ValueError, TypeError):
+    if mrp_value is None:
 
         checks["mrp_value"] = "FAIL"
 
         violations.append({
             "field": "mrp",
             "message": (
-                "MRP must be a valid numeric value."
+                "MRP must contain a valid numeric value."
             )
         })
 
@@ -81,43 +98,33 @@ def check_mrp(product):
             "violations": violations
         }
 
+    if mrp_value <= 0:
+
+        checks["mrp_value"] = "FAIL"
+
+        violations.append({
+            "field": "mrp",
+            "message": (
+                "MRP must be greater than zero."
+            )
+        })
+
+        return {
+            "checks": checks,
+            "violations": violations
+        }
+
+    checks["mrp_value"] = "PASS"
+
     # --------------------------------------------------
     # 3. Check selling price against MRP
     # --------------------------------------------------
 
     if selling_price is not None and str(selling_price).strip() != "":
 
-        try:
+        selling_price_value = _parse_price(selling_price)
 
-            selling_price_value = float(selling_price)
-
-            if selling_price_value < 0:
-
-                checks["selling_price"] = "FAIL"
-
-                violations.append({
-                    "field": "selling_price",
-                    "message": (
-                        "Selling price cannot be negative."
-                    )
-                })
-
-            elif selling_price_value > mrp_value:
-
-                checks["selling_price"] = "FAIL"
-
-                violations.append({
-                    "field": "selling_price",
-                    "message": (
-                        "Selling price must not exceed the declared MRP."
-                    )
-                })
-
-            else:
-
-                checks["selling_price"] = "PASS"
-
-        except (ValueError, TypeError):
+        if selling_price_value is None:
 
             checks["selling_price"] = "REVIEW"
 
@@ -127,6 +134,32 @@ def check_mrp(product):
                     "Selling price could not be verified."
                 )
             })
+
+        elif selling_price_value < 0:
+
+            checks["selling_price"] = "FAIL"
+
+            violations.append({
+                "field": "selling_price",
+                "message": (
+                    "Selling price cannot be negative."
+                )
+            })
+
+        elif selling_price_value > mrp_value:
+
+            checks["selling_price"] = "FAIL"
+
+            violations.append({
+                "field": "selling_price",
+                "message": (
+                    "Selling price must not exceed the declared MRP."
+                )
+            })
+
+        else:
+
+            checks["selling_price"] = "PASS"
 
     else:
 

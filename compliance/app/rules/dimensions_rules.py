@@ -5,14 +5,14 @@ def check_dimensions(product):
     """
     Validates dimensional information of a packaged commodity.
 
-    Dimensions are checked only when dimensional information
-    is applicable/provided.
+    Dimensions are checked only when they are explicitly marked
+    as applicable or when dimensional information is provided.
 
     Checks:
-    1. Dimensions are present when applicable.
-    2. Numeric dimension values are valid.
+    1. Dimensions are applicable.
+    2. Dimension values contain valid numbers.
     3. Dimension values are greater than zero.
-    4. Units can be identified.
+    4. Dimension units can be identified.
     """
 
     checks = {}
@@ -25,20 +25,7 @@ def check_dimensions(product):
     dimensions_applicable = product.get("dimensions_applicable")
 
     # --------------------------------------------------
-    # 1. Check applicability
-    # --------------------------------------------------
-
-    if dimensions_applicable is False:
-
-        checks["dimensions_applicable"] = "NOT_APPLICABLE"
-
-        return {
-            "checks": checks,
-            "violations": violations
-        }
-
-    # --------------------------------------------------
-    # 2. Check whether dimensions were provided
+    # 1. Determine applicability
     # --------------------------------------------------
 
     dimensions = {
@@ -53,15 +40,38 @@ def check_dimensions(product):
         if value is not None and str(value).strip() != ""
     }
 
-    if not provided_dimensions:
+    # Explicitly marked as not applicable
+    if dimensions_applicable is False:
 
-        checks["dimensions_present"] = "REVIEW"
+        checks["dimensions_applicable"] = "NOT_APPLICABLE"
+
+        return {
+            "checks": checks,
+            "violations": violations
+        }
+
+    # No dimensional information and applicability unknown.
+    # Do not assume that dimensions are required.
+    if not provided_dimensions and dimensions_applicable is not True:
+
+        checks["dimensions_applicable"] = "NOT_APPLICABLE"
+
+        return {
+            "checks": checks,
+            "violations": violations
+        }
+
+    # Dimensions explicitly marked as applicable but missing.
+    if dimensions_applicable is True and not provided_dimensions:
+
+        checks["dimensions_applicable"] = "PASS"
+        checks["dimensions_present"] = "FAIL"
 
         violations.append({
             "field": "dimensions",
             "message": (
-                "Dimensional information was not detected. "
-                "Applicability requires review."
+                "Dimensional information is required but "
+                "was not detected."
             )
         })
 
@@ -70,17 +80,36 @@ def check_dimensions(product):
             "violations": violations
         }
 
+    # --------------------------------------------------
+    # 2. Dimensions are applicable/provided
+    # --------------------------------------------------
+
+    checks["dimensions_applicable"] = "PASS"
     checks["dimensions_present"] = "PASS"
 
     # --------------------------------------------------
     # 3. Validate individual dimensions
     # --------------------------------------------------
 
+    units = [
+        "mm",
+        "cm",
+        "m",
+        "inch",
+        "in"
+    ]
+
     for dimension_name, dimension_value in provided_dimensions.items():
+
+        dimension_text = str(dimension_value).strip()
+
+        # --------------------------------------------------
+        # Numeric value
+        # --------------------------------------------------
 
         number_match = re.search(
             r"\d+(?:\.\d+)?",
-            str(dimension_value)
+            dimension_text
         )
 
         if not number_match:
@@ -116,26 +145,24 @@ def check_dimensions(product):
             checks[f"{dimension_name}_value"] = "PASS"
 
         # --------------------------------------------------
-        # Check unit
+        # Unit
         # --------------------------------------------------
 
-        dimension_text = str(dimension_value).lower()
+        dimension_lower = dimension_text.lower()
 
-        units = [
-            "mm",
-            "cm",
-            "m",
-            "inch",
-            "in"
-        ]
+        unit_found = False
 
-        unit_found = any(
-            re.search(
-                r"\b" + re.escape(unit) + r"\b",
-                dimension_text
+        for unit in units:
+
+            pattern = (
+                r"(?<![a-z])"
+                + re.escape(unit.lower())
+                + r"(?![a-z])"
             )
-            for unit in units
-        )
+
+            if re.search(pattern, dimension_lower):
+                unit_found = True
+                break
 
         if unit_found:
 

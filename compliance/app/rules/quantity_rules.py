@@ -36,7 +36,6 @@ def check_quantity(product):
 
     checks["quantity_present"] = "PASS"
 
-    # Convert quantity to string
     quantity_text = str(quantity).strip()
 
     # --------------------------------------------------
@@ -92,13 +91,25 @@ def check_quantity(product):
 
     quantity_lower = quantity_text.lower()
 
-    unit_found = any(
-        re.search(
-            r"\b" + re.escape(unit.lower()) + r"\b",
-            quantity_lower
-        )
-        for unit in recognized_units
-    )
+    unit_found = False
+
+    for unit in recognized_units:
+
+        # Allow units directly after numbers:
+        # 200g
+        # 13g
+        # 1kg
+        # 500ml
+        #
+        # Also allow separated forms:
+        # 200 g
+        # 1 kg
+        # 500 ml
+        pattern = r"(?<![a-z])" + re.escape(unit.lower()) + r"(?![a-z])"
+
+        if re.search(pattern, quantity_lower):
+            unit_found = True
+            break
 
     if unit_found:
 

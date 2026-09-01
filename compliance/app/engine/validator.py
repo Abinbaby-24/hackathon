@@ -2,6 +2,9 @@ from app.rules.mandatory_declarations import check_mandatory_declarations
 from app.rules.mrp_rules import check_mrp
 from app.rules.quantity_rules import check_quantity
 from app.rules.date_rules import check_dates
+from app.rules.dimensions_rules import check_dimensions
+from app.rules.display_panel_rules import check_display_panel
+from app.rules.standard_pack_rules import check_standard_pack
 
 from app.engine.scorer import calculate_score
 from app.engine.status import determine_status
@@ -17,10 +20,9 @@ def validate_product(product):
     - MRP
     - Net quantity
     - Date declarations
-
-    Additional rules such as dimensions and standard
-    package sizes can be added without changing the
-    overall validation structure.
+    - Dimensions
+    - Display panel
+    - Standard pack size
     """
 
     if not isinstance(product, dict):
@@ -100,13 +102,53 @@ def validate_product(product):
     )
 
     # --------------------------------------------------
-    # 5. Calculate Compliance Score
+    # 5. Dimensions Rules
+    # --------------------------------------------------
+
+    dimensions_result = check_dimensions(product)
+
+    all_checks["dimensions"] = dimensions_result["checks"]
+
+    all_violations.extend(
+        dimensions_result["violations"]
+    )
+
+    # --------------------------------------------------
+    # 6. Display Panel Rules
+    # --------------------------------------------------
+
+    display_panel_result = check_display_panel(product)
+
+    all_checks["display_panel"] = (
+        display_panel_result["checks"]
+    )
+
+    all_violations.extend(
+        display_panel_result["violations"]
+    )
+
+    # --------------------------------------------------
+    # 7. Standard Pack Size Rules
+    # --------------------------------------------------
+
+    standard_pack_result = check_standard_pack(product)
+
+    all_checks["standard_pack_size"] = (
+        standard_pack_result["checks"]
+    )
+
+    all_violations.extend(
+        standard_pack_result["violations"]
+    )
+
+    # --------------------------------------------------
+    # 8. Calculate Compliance Score
     # --------------------------------------------------
 
     score_data = calculate_score(all_checks)
 
     # --------------------------------------------------
-    # 6. Determine Final Status
+    # 9. Determine Final Status
     # --------------------------------------------------
 
     status = determine_status(
@@ -115,7 +157,7 @@ def validate_product(product):
     )
 
     # --------------------------------------------------
-    # 7. Return Final Compliance Result
+    # 10. Return Final Compliance Result
     # --------------------------------------------------
 
     return {
