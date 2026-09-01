@@ -1,24 +1,38 @@
-const StatCard = ({ label, value, tone = 'neutral' }) => {
-  const toneStyles = {
-    neutral: { background: '#f4f6fb', color: '#1f2937' },
-    success: { background: '#eafaf1', color: '#166534' },
-    danger: { background: '#fff1f2', color: '#b91c1c' },
-    accent: { background: '#eef2ff', color: '#4338ca' },
+const StatCard = ({ label, value, tone = 'neutral', meta = '' }) => {
+  const tones = {
+    neutral: {
+      badge: 'neutral',
+      accentClass: 'tone-neutral',
+      indicator: 'Rate',
+    },
+    success: {
+      badge: 'success',
+      accentClass: 'tone-success',
+      indicator: 'Pass',
+    },
+    danger: {
+      badge: 'danger',
+      accentClass: 'tone-danger',
+      indicator: 'Alert',
+    },
+    accent: {
+      badge: 'accent',
+      accentClass: 'tone-accent',
+      indicator: 'Total',
+    },
   }
 
+  const currentTone = tones[tone] || tones.neutral
+
   return (
-    <div
-      style={{
-        background: toneStyles[tone].background,
-        color: toneStyles[tone].color,
-        borderRadius: 16,
-        padding: '1.25rem',
-        boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)',
-      }}
-    >
-      <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.2 }}>{value}</div>
-    </div>
+    <article className={`stat-card ${currentTone.accentClass}`}>
+      <div className="stat-header">
+        <span className="stat-label">{label}</span>
+        <span className={`stat-pill ${currentTone.badge}`}>{currentTone.indicator}</span>
+      </div>
+      <div className="stat-value">{value}</div>
+      {meta ? <div className="stat-meta">{meta}</div> : null}
+    </article>
   )
 }
 
